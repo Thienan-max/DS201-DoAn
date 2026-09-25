@@ -1,0 +1,32 @@
+# Data folders (These are already uploaded to Kaggle, no need to push to GitHub)
+data/
+*.zip
+*.tar.gz
+*.csv
+*.json
+*.jsonl
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
