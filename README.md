@@ -4,11 +4,11 @@ This repository contains the data processing pipeline for our Deep Learning for 
 
 ## Scripts Overview
 
-1. `download_and_clean.py`: Downloads the initial dataset and performs basic cleaning.
-2. `filter_data.py`: Filters the dataset based on specific criteria.
-3. `filter_columns.py`: Selects and cleans necessary columns from the metadata.
-4. `resize_images.py`: Resizes images to the required resolution for deep learning models.
-5. `sanity_check.py`: Performs final validation on the dataset (checking for corrupted images, cleaning HTML/junk characters, and verifying data synchronization).
+1. `scripts/download_and_clean.py`: Downloads the initial dataset and performs basic cleaning.
+2. `scripts/filter_data.py`: Filters the dataset based on specific criteria.
+3. `scripts/filter_columns.py`: Selects and cleans necessary columns from the metadata.
+4. `scripts/resize_images.py`: Resizes images to the required resolution for deep learning models.
+5. `scripts/sanity_check.py`: Performs final validation on the dataset (checking for corrupted images, cleaning HTML/junk characters, and verifying data synchronization).
 
 ## Dataset
 
