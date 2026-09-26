@@ -1,5 +1,6 @@
 import os
 import json
+import argparse
 import torch
 import faiss
 import numpy as np
@@ -8,18 +9,6 @@ from PIL import Image
 from transformers import CLIPProcessor, CLIPModel
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
-
-# ==========================================
-# CẤU HÌNH ĐƯỜNG DẪN (Chỉnh sửa lại cho đúng trên Kaggle)
-# ==========================================
-# Ví dụ: Nếu upload folder data lên Kaggle thì đường dẫn có thể là /kaggle/input/ten-dataset/...
-IMAGE_DIR = "/kaggle/input/your-dataset-name/resized_images"
-METADATA_PATH = "/kaggle/input/your-dataset-name/final_metadata.jsonl"
-INDEX_SAVE_PATH = "amazon_c2c.index" # Lưu ở thư mục hiện tại (output của Kaggle)
-MAPPING_SAVE_PATH = "mapping_id.pkl" # Lưu ở thư mục hiện tại (output của Kaggle)
-
-BATCH_SIZE = 128
-MODEL_ID = "openai/clip-vit-base-patch32"
 
 class ProductDataset(Dataset):
     def __init__(self, metadata_path, image_dir):
@@ -106,21 +95,21 @@ def collate_fn(batch, processor):
     
     return inputs_text, inputs_images, ids, categories, colors
 
-def main():
+def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Đang sử dụng device: {device}")
 
     # 1. Khởi tạo Model và Processor
-    print(f"Đang tải model CLIP: {MODEL_ID}...")
-    model = CLIPModel.from_pretrained(MODEL_ID).to(device)
-    processor = CLIPProcessor.from_pretrained(MODEL_ID)
+    print(f"Đang tải model CLIP: {args.model_id}...")
+    model = CLIPModel.from_pretrained(args.model_id).to(device)
+    processor = CLIPProcessor.from_pretrained(args.model_id)
     model.eval()
 
     # 2. Khởi tạo Dataset và DataLoader
-    dataset = ProductDataset(METADATA_PATH, IMAGE_DIR)
+    dataset = ProductDataset(args.metadata_path, args.image_dir)
     dataloader = DataLoader(
         dataset, 
-        batch_size=BATCH_SIZE, 
+        batch_size=args.batch_size, 
         shuffle=False, 
         num_workers=4, 
         collate_fn=lambda b: collate_fn(b, processor)
@@ -183,14 +172,23 @@ def main():
 
     # 4. Lưu lại Index và Mapping
     print(f"Đã nạp xong {index.ntotal} vectors vào FAISS.")
-    print(f"Đang lưu index vào {INDEX_SAVE_PATH}...")
-    faiss.write_index(index, INDEX_SAVE_PATH)
+    print(f"Đang lưu index vào {args.index_save_path}...")
+    faiss.write_index(index, args.index_save_path)
     
-    print(f"Đang lưu mapping id vào {MAPPING_SAVE_PATH}...")
-    with open(MAPPING_SAVE_PATH, 'wb') as f:
+    print(f"Đang lưu mapping id vào {args.mapping_save_path}...")
+    with open(args.mapping_save_path, 'wb') as f:
         pickle.dump(mapping_dict, f)
 
     print("Hoàn tất! Hãy tải các file output về máy local.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Tạo FAISS index từ ảnh và metadata")
+    parser.add_argument("--image_dir", type=str, default="/kaggle/input/your-dataset-name/resized_images", help="Đường dẫn tới thư mục chứa ảnh")
+    parser.add_argument("--metadata_path", type=str, default="/kaggle/input/your-dataset-name/final_metadata.jsonl", help="Đường dẫn tới file metadata")
+    parser.add_argument("--index_save_path", type=str, default="amazon_c2c.index", help="Tên file lưu index")
+    parser.add_argument("--mapping_save_path", type=str, default="mapping_id.pkl", help="Tên file lưu mapping ID")
+    parser.add_argument("--batch_size", type=int, default=128, help="Kích thước batch")
+    parser.add_argument("--model_id", type=str, default="openai/clip-vit-base-patch32", help="Tên model CLIP")
+    
+    args = parser.parse_args()
+    main(args)
