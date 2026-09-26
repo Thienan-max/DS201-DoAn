@@ -135,15 +135,10 @@ def main(args):
             batch_texts = {k: v.to(device) for k, v in batch_texts.items()}
             batch_images = {k: v.to(device) for k, v in batch_images.items()}
             
-            # Trích xuất đặc trưng ảnh (cho cả ảnh 1 và ảnh 2 cùng lúc)
-            all_image_features = model.get_image_features(pixel_values=batch_images["pixel_values"])
-            
-            # Đảm bảo all_image_features là Tensor (fix lỗi tuple trả về trên một số version transformers cũ/mới)
-            if not isinstance(all_image_features, torch.Tensor):
-                if hasattr(all_image_features, "image_embeds"):
-                    all_image_features = all_image_features.image_embeds
-                else:
-                    all_image_features = all_image_features[0]
+            # Trích xuất đặc trưng ảnh (cho cả ảnh 1 và ảnh 2 cùng lúc) thủ công để đảm bảo luôn ra 512 chiều
+            vision_outputs = model.vision_model(pixel_values=batch_images["pixel_values"])
+            pooler_output = vision_outputs.pooler_output if hasattr(vision_outputs, 'pooler_output') else vision_outputs[1]
+            all_image_features = model.visual_projection(pooler_output)
                     
             # Chia lại thành ảnh 1 và ảnh 2 rồi lấy trung bình
             bsz = len(batch_ids)
@@ -151,15 +146,10 @@ def main(args):
             image_features_2 = all_image_features[bsz:]
             image_features = (image_features_1 + image_features_2) / 2.0
             
-            # Trích xuất đặc trưng văn bản
-            text_features = model.get_text_features(input_ids=batch_texts["input_ids"], attention_mask=batch_texts["attention_mask"])
-            
-            # Đảm bảo text_features là Tensor
-            if not isinstance(text_features, torch.Tensor):
-                if hasattr(text_features, "text_embeds"):
-                    text_features = text_features.text_embeds
-                else:
-                    text_features = text_features[0]
+            # Trích xuất đặc trưng văn bản thủ công
+            text_outputs = model.text_model(input_ids=batch_texts["input_ids"], attention_mask=batch_texts["attention_mask"])
+            text_pooler_output = text_outputs.pooler_output if hasattr(text_outputs, 'pooler_output') else text_outputs[1]
+            text_features = model.text_projection(text_pooler_output)
             
             # (Tùy chọn) Kết hợp đặc trưng ảnh và văn bản: 
             # Có thể tính trung bình (average) giữa image và text vector
