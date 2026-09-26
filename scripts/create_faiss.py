@@ -138,6 +138,13 @@ def main(args):
             # Trích xuất đặc trưng ảnh (cho cả ảnh 1 và ảnh 2 cùng lúc)
             all_image_features = model.get_image_features(pixel_values=batch_images["pixel_values"])
             
+            # Đảm bảo all_image_features là Tensor (fix lỗi tuple trả về trên một số version transformers cũ/mới)
+            if not isinstance(all_image_features, torch.Tensor):
+                if hasattr(all_image_features, "image_embeds"):
+                    all_image_features = all_image_features.image_embeds
+                else:
+                    all_image_features = all_image_features[0]
+                    
             # Chia lại thành ảnh 1 và ảnh 2 rồi lấy trung bình
             bsz = len(batch_ids)
             image_features_1 = all_image_features[:bsz]
@@ -146,6 +153,13 @@ def main(args):
             
             # Trích xuất đặc trưng văn bản
             text_features = model.get_text_features(input_ids=batch_texts["input_ids"], attention_mask=batch_texts["attention_mask"])
+            
+            # Đảm bảo text_features là Tensor
+            if not isinstance(text_features, torch.Tensor):
+                if hasattr(text_features, "text_embeds"):
+                    text_features = text_features.text_embeds
+                else:
+                    text_features = text_features[0]
             
             # (Tùy chọn) Kết hợp đặc trưng ảnh và văn bản: 
             # Có thể tính trung bình (average) giữa image và text vector
